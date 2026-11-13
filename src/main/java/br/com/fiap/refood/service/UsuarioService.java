@@ -3,6 +3,8 @@ package br.com.fiap.refood.service;
 import br.com.fiap.refood.dao.UsuarioDAO;
 import br.com.fiap.refood.dto.request.UsuarioRequest;
 import br.com.fiap.refood.dto.response.UsuarioResponse;
+import br.com.fiap.refood.exception.RecursoNaoEncontradoException;
+import br.com.fiap.refood.exception.RegraNegocioException;
 import br.com.fiap.refood.model.Usuario;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -27,7 +29,7 @@ public class UsuarioService {
                     .anyMatch(u -> u.getEmail().equalsIgnoreCase(dto.email()));
 
             if (emailExiste) {
-                throw new RuntimeException("E-mail já cadastrado.");
+                throw new RegraNegocioException("E-mail já cadastrado.");
             }
 
             Usuario usuario = modelMapper.map(dto, Usuario.class);
@@ -58,7 +60,7 @@ public class UsuarioService {
             Usuario usuario = usuarioDAO.buscarPorId(id);
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             return modelMapper.map(usuario, UsuarioResponse.class);
@@ -73,15 +75,14 @@ public class UsuarioService {
             Usuario usuario = usuarioDAO.buscarPorId(id);
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             boolean emailExiste = usuarioDAO.listarTodos().stream()
-                    .anyMatch(u -> !u.getId().equals(id)
-                            && u.getEmail().equalsIgnoreCase(dto.email()));
+                    .anyMatch(u -> !u.getId().equals(id) && u.getEmail().equalsIgnoreCase(dto.email()));
 
             if (emailExiste) {
-                throw new RuntimeException("E-mail já cadastrado.");
+                throw new RegraNegocioException("E-mail já cadastrado.");
             }
 
             Usuario atualizado = modelMapper.map(dto, Usuario.class);
@@ -102,7 +103,7 @@ public class UsuarioService {
             Usuario usuario = usuarioDAO.buscarPorId(id);
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             usuarioDAO.excluir(id);

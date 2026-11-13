@@ -4,6 +4,8 @@ import br.com.fiap.refood.dao.PagamentoDAO;
 import br.com.fiap.refood.dao.PedidoDAO;
 import br.com.fiap.refood.dto.request.PagamentoRequest;
 import br.com.fiap.refood.dto.response.PagamentoResponse;
+import br.com.fiap.refood.exception.RecursoNaoEncontradoException;
+import br.com.fiap.refood.exception.RegraNegocioException;
 import br.com.fiap.refood.model.Pagamento;
 import br.com.fiap.refood.model.Pedido;
 import org.modelmapper.ModelMapper;
@@ -34,19 +36,17 @@ public class PagamentoService {
             Pedido pedido = pedidoDAO.buscarPorId(dto.pedidoId());
 
             if (pedido == null) {
-                throw new RuntimeException("Pedido não encontrado.");
+                throw new RecursoNaoEncontradoException("Pedido não encontrado.");
             }
 
             Pagamento pagamentoExistente =
                     pagamentoDAO.buscarPorPedido(dto.pedidoId());
 
             if (pagamentoExistente != null) {
-                throw new RuntimeException(
-                        "Este pedido já possui um pagamento.");
+                throw new RegraNegocioException("Este pedido já possui um pagamento.");
             }
 
-            Pagamento pagamento =
-                    modelMapper.map(dto, Pagamento.class);
+            Pagamento pagamento = modelMapper.map(dto, Pagamento.class);
 
             pagamento.setPedido(pedido);
             pagamento.setValorPagamento(pedido.getValorTotal());
@@ -77,7 +77,7 @@ public class PagamentoService {
             Pagamento pagamento = pagamentoDAO.buscarPorId(id);
 
             if (pagamento == null) {
-                throw new RuntimeException("Pagamento não encontrado.");
+                throw new RecursoNaoEncontradoException("Pagamento não encontrado.");
             }
 
             return toResponse(pagamento);
@@ -89,12 +89,10 @@ public class PagamentoService {
 
     public PagamentoResponse buscarPorPedido(Long pedidoId) {
         try {
-            Pagamento pagamento =
-                    pagamentoDAO.buscarPorPedido(pedidoId);
+            Pagamento pagamento = pagamentoDAO.buscarPorPedido(pedidoId);
 
             if (pagamento == null) {
-                throw new RuntimeException(
-                        "Pagamento não encontrado para este pedido.");
+                throw new RegraNegocioException("Pagamento não encontrado para este pedido.");
             }
 
             return toResponse(pagamento);

@@ -4,6 +4,8 @@ import br.com.fiap.refood.dao.EstabelecimentoDAO;
 import br.com.fiap.refood.dao.UsuarioDAO;
 import br.com.fiap.refood.dto.request.EstabelecimentoRequest;
 import br.com.fiap.refood.dto.response.EstabelecimentoResponse;
+import br.com.fiap.refood.exception.RecursoNaoEncontradoException;
+import br.com.fiap.refood.exception.RegraNegocioException;
 import br.com.fiap.refood.model.Estabelecimento;
 import br.com.fiap.refood.model.Usuario;
 import br.com.fiap.refood.model.enums.TipoUsuario;
@@ -34,11 +36,11 @@ public class EstabelecimentoService {
             Usuario usuario = usuarioDAO.buscarPorId(dto.usuarioId());
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
-                throw new RuntimeException(
+                throw new RegraNegocioException(
                         "Apenas comerciantes podem cadastrar estabelecimentos.");
             }
 
@@ -46,7 +48,7 @@ public class EstabelecimentoService {
                     .anyMatch(e -> e.getUsuario().getId().equals(dto.usuarioId()));
 
             if (usuarioJaPossui) {
-                throw new RuntimeException(
+                throw new RegraNegocioException(
                         "Este usuário já possui um estabelecimento.");
             }
 
@@ -54,7 +56,7 @@ public class EstabelecimentoService {
                     .anyMatch(e -> e.getCnpj().equals(dto.cnpj()));
 
             if (cnpjExiste) {
-                throw new RuntimeException("CNPJ já cadastrado.");
+                throw new RegraNegocioException("CNPJ já cadastrado.");
             }
 
             Estabelecimento estabelecimento =
@@ -89,7 +91,7 @@ public class EstabelecimentoService {
                     estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             return modelMapper.map(
@@ -107,17 +109,17 @@ public class EstabelecimentoService {
                     estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             Usuario usuario = usuarioDAO.buscarPorId(dto.usuarioId());
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
-                throw new RuntimeException("O usuário não é comerciante.");
+                throw new RegraNegocioException("O usuário não é comerciante.");
             }
 
             boolean cnpjExiste = estabelecimentoDAO.listarTodos().stream()
@@ -125,7 +127,7 @@ public class EstabelecimentoService {
                             && e.getCnpj().equals(dto.cnpj()));
 
             if (cnpjExiste) {
-                throw new RuntimeException("CNPJ já cadastrado.");
+                throw new RegraNegocioException("CNPJ já cadastrado.");
             }
 
             Estabelecimento atualizado =
@@ -150,7 +152,7 @@ public class EstabelecimentoService {
                     estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             estabelecimentoDAO.excluir(id);

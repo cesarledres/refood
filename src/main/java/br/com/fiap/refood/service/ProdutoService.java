@@ -4,6 +4,8 @@ import br.com.fiap.refood.dao.EstabelecimentoDAO;
 import br.com.fiap.refood.dao.ProdutoDAO;
 import br.com.fiap.refood.dto.request.ProdutoRequest;
 import br.com.fiap.refood.dto.response.ProdutoResponse;
+import br.com.fiap.refood.exception.RecursoNaoEncontradoException;
+import br.com.fiap.refood.exception.RegraNegocioException;
 import br.com.fiap.refood.model.Estabelecimento;
 import br.com.fiap.refood.model.Produto;
 import org.modelmapper.ModelMapper;
@@ -35,7 +37,7 @@ public class ProdutoService {
                     estabelecimentoDAO.buscarPorId(dto.estabelecimentoId());
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             validarProduto(dto);
@@ -65,11 +67,10 @@ public class ProdutoService {
 
     public List<ProdutoResponse> listarPorEstabelecimento(Long estabelecimentoId) {
         try {
-            Estabelecimento estabelecimento =
-                    estabelecimentoDAO.buscarPorId(estabelecimentoId);
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(estabelecimentoId);
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             return produtoDAO.listarTodos().stream()
@@ -89,7 +90,7 @@ public class ProdutoService {
             Produto produto = produtoDAO.buscarPorId(id);
 
             if (produto == null) {
-                throw new RuntimeException("Produto não encontrado.");
+                throw new RecursoNaoEncontradoException("Produto não encontrado.");
             }
 
             return modelMapper.map(produto, ProdutoResponse.class);
@@ -104,14 +105,13 @@ public class ProdutoService {
             Produto produto = produtoDAO.buscarPorId(id);
 
             if (produto == null) {
-                throw new RuntimeException("Produto não encontrado.");
+                throw new RecursoNaoEncontradoException("Produto não encontrado.");
             }
 
-            Estabelecimento estabelecimento =
-                    estabelecimentoDAO.buscarPorId(dto.estabelecimentoId());
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(dto.estabelecimentoId());
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             validarProduto(dto);
@@ -134,7 +134,7 @@ public class ProdutoService {
             Produto produto = produtoDAO.buscarPorId(id);
 
             if (produto == null) {
-                throw new RuntimeException("Produto não encontrado.");
+                throw new RecursoNaoEncontradoException("Produto não encontrado.");
             }
 
             produtoDAO.excluir(id);
@@ -146,25 +146,23 @@ public class ProdutoService {
 
     private void validarProduto(ProdutoRequest dto) {
         if (dto.precoOriginal() == null || dto.precoOriginal() <= 0) {
-            throw new RuntimeException("O preço original deve ser maior que zero.");
+            throw new RegraNegocioException("O preço original deve ser maior que zero.");
         }
 
         if (dto.precoPromocional() == null || dto.precoPromocional() <= 0) {
-            throw new RuntimeException("O preço promocional deve ser maior que zero.");
+            throw new RegraNegocioException("O preço promocional deve ser maior que zero.");
         }
 
         if (dto.precoPromocional() >= dto.precoOriginal()) {
-            throw new RuntimeException(
-                    "O preço promocional deve ser menor que o original.");
+            throw new RegraNegocioException("O preço promocional deve ser menor que o original.");
         }
 
         if (dto.quantidadeEstoque() == null || dto.quantidadeEstoque() < 0) {
-            throw new RuntimeException("Quantidade em estoque inválida.");
+            throw new RegraNegocioException("Quantidade em estoque inválida.");
         }
 
-        if (dto.dataValidade() == null
-                || dto.dataValidade().isBefore(LocalDate.now())) {
-            throw new RuntimeException("A data de validade é inválida.");
+        if (dto.dataValidade() == null || dto.dataValidade().isBefore(LocalDate.now())) {
+            throw new RegraNegocioException("A data de validade é inválida.");
         }
     }
 }

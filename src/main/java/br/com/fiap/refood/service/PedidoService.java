@@ -3,6 +3,8 @@ package br.com.fiap.refood.service;
 import br.com.fiap.refood.dao.*;
 import br.com.fiap.refood.dto.request.*;
 import br.com.fiap.refood.dto.response.*;
+import br.com.fiap.refood.exception.RecursoNaoEncontradoException;
+import br.com.fiap.refood.exception.RegraNegocioException;
 import br.com.fiap.refood.model.*;
 import br.com.fiap.refood.model.enums.StatusPedido;
 import org.modelmapper.ModelMapper;
@@ -45,19 +47,17 @@ public class PedidoService {
             Usuario usuario = usuarioDAO.buscarPorId(dto.usuarioId());
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
-            Estabelecimento estabelecimento =
-                    estabelecimentoDAO.buscarPorId(dto.estabelecimentoId());
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(dto.estabelecimentoId());
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             if (dto.itens() == null || dto.itens().isEmpty()) {
-                throw new RuntimeException(
-                        "O pedido precisa ter pelo menos um item.");
+                throw new RegraNegocioException("O pedido precisa ter pelo menos um item.");
             }
 
             Pedido pedido = modelMapper.map(dto, Pedido.class);
@@ -79,37 +79,30 @@ public class PedidoService {
                         produtoDAO.buscarPorId(itemDTO.produtoId());
 
                 if (produto == null) {
-                    throw new RuntimeException(
-                            "Produto não encontrado: " + itemDTO.produtoId());
+                    throw new RecursoNaoEncontradoException("Produto não encontrado: " + itemDTO.produtoId());
                 }
 
-                if (!produto.getEstabelecimento().getId()
-                        .equals(dto.estabelecimentoId())) {
-                    throw new RuntimeException(
-                            "Todos os produtos devem pertencer ao estabelecimento do pedido.");
+                if (!produto.getEstabelecimento().getId().equals(dto.estabelecimentoId())) {
+                    throw new RegraNegocioException("Todos os produtos devem pertencer ao estabelecimento do pedido.");
                 }
 
                 if (produto.getDataValidade().isBefore(LocalDate.now())) {
-                    throw new RuntimeException(
-                            "O produto " + produto.getNome() + " está vencido.");
+                    throw new RegraNegocioException("O produto " + produto.getNome() + " está vencido.");
                 }
 
                 if (itemDTO.quantidade() == null
                         || itemDTO.quantidade() <= 0) {
-                    throw new RuntimeException(
-                            "A quantidade deve ser maior que zero.");
+                    throw new RegraNegocioException("A quantidade deve ser maior que zero.");
                 }
 
                 if (produto.getQuantidadeEstoque() < itemDTO.quantidade()) {
-                    throw new RuntimeException(
-                            "Estoque insuficiente para " + produto.getNome());
+                    throw new RegraNegocioException("Estoque insuficiente para " + produto.getNome());
                 }
 
                 double valorUnitario = produto.getPrecoPromocional();
                 double valorSubtotal = valorUnitario * itemDTO.quantidade();
 
-                ItemPedido item =
-                        modelMapper.map(itemDTO, ItemPedido.class);
+                ItemPedido item = modelMapper.map(itemDTO, ItemPedido.class);
 
                 item.setPedido(pedido);
                 item.setProduto(produto);
@@ -118,9 +111,7 @@ public class PedidoService {
 
                 itemPedidoDAO.inserir(item);
 
-                produto.setQuantidadeEstoque(
-                        produto.getQuantidadeEstoque()
-                                - itemDTO.quantidade()
+                produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - itemDTO.quantidade()
                 );
 
                 produtoDAO.atualizar(produto);
@@ -157,7 +148,7 @@ public class PedidoService {
             Pedido pedido = pedidoDAO.buscarPorId(id);
 
             if (pedido == null) {
-                throw new RuntimeException("Pedido não encontrado.");
+                throw new RecursoNaoEncontradoException("Pedido não encontrado.");
             }
 
             return toResponse(pedido);
@@ -172,7 +163,7 @@ public class PedidoService {
             Usuario usuario = usuarioDAO.buscarPorId(usuarioId);
 
             if (usuario == null) {
-                throw new RuntimeException("Usuário não encontrado.");
+                throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
             return pedidoDAO.listarTodos().stream()
@@ -191,7 +182,7 @@ public class PedidoService {
                     estabelecimentoDAO.buscarPorId(estabelecimentoId);
 
             if (estabelecimento == null) {
-                throw new RuntimeException("Estabelecimento não encontrado.");
+                throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
             }
 
             return pedidoDAO.listarTodos().stream()
@@ -201,8 +192,7 @@ public class PedidoService {
                     .toList();
 
         } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Erro ao listar pedidos do estabelecimento.", e);
+            throw new RuntimeException("Erro ao listar pedidos do estabelecimento.", e);
         }
     }
 
@@ -211,7 +201,7 @@ public class PedidoService {
             Pedido pedido = pedidoDAO.buscarPorId(id);
 
             if (pedido == null) {
-                throw new RuntimeException("Pedido não encontrado.");
+                throw new RecursoNaoEncontradoException("Pedido não encontrado.");
             }
 
             pedido.setStatus(StatusPedido.CONCLUIDO);
@@ -226,12 +216,10 @@ public class PedidoService {
 
     private PedidoResponse toResponse(Pedido pedido) {
         try {
-            List<ItemPedido> itens =
-                    itemPedidoDAO.listarPorPedido(pedido.getId());
+            List<ItemPedido> itens = itemPedidoDAO.listarPorPedido(pedido.getId());
 
             for (ItemPedido item : itens) {
-                Produto produto =
-                        produtoDAO.buscarPorId(item.getProduto().getId());
+                Produto produto = produtoDAO.buscarPorId(item.getProduto().getId());
 
                 item.setProduto(produto);
             }
