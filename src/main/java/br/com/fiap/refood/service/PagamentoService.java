@@ -1,79 +1,103 @@
 package br.com.fiap.refood.service;
 
+import br.com.fiap.refood.dao.PagamentoDAO;
+import br.com.fiap.refood.dao.PedidoDAO;
 import br.com.fiap.refood.dto.request.PagamentoRequest;
 import br.com.fiap.refood.dto.response.PagamentoResponse;
 import br.com.fiap.refood.model.Pagamento;
 import br.com.fiap.refood.model.Pedido;
-import br.com.fiap.refood.repository.PagamentoRepository;
-import br.com.fiap.refood.repository.PedidoRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class PagamentoService {
 
-    private final PagamentoRepository pagamentoRepository;
-    private final PedidoRepository pedidoRepository;
+    private final PagamentoDAO pagamentoDAO;
+    private final PedidoDAO pedidoDAO;
 
     public PagamentoService(
-            PagamentoRepository pagamentoRepository,
-            PedidoRepository pedidoRepository) {
-
-        this.pagamentoRepository = pagamentoRepository;
-        this.pedidoRepository = pedidoRepository;
+            PagamentoDAO pagamentoDAO,
+            PedidoDAO pedidoDAO) {
+        this.pagamentoDAO = pagamentoDAO;
+        this.pedidoDAO = pedidoDAO;
     }
 
-    @Transactional
     public PagamentoResponse cadastrar(PagamentoRequest dto) {
+        try {
+            Pedido pedido = pedidoDAO.buscarPorId(dto.pedidoId());
 
-        Pedido pedido = pedidoRepository.findById(dto.pedidoId())
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado."));
+            if (pedido == null) {
+                throw new RuntimeException("Pedido não encontrado.");
+            }
 
-        if (pagamentoRepository.findByPedidoId(pedido.getId()).isPresent()) {
-            throw new RuntimeException("Este pedido já possui um pagamento cadastrado.");
+            Pagamento pagamentoExistente =
+                    pagamentoDAO.buscarPorPedido(dto.pedidoId());
+
+            if (pagamentoExistente != null) {
+                throw new RuntimeException("Este pedido já possui um pagamento.");
+            }
+
+            Pagamento pagamento = new Pagamento();
+            pagamento.setPedido(pedido);
+            pagamento.setTipoPagamento(dto.tipoPagamento());
+            pagamento.setValorPagamento(pedido.getValorTotal());
+            pagamento.setDataPagamento(LocalDateTime.now());
+
+            pagamentoDAO.inserir(pagamento);
+
+            return toResponse(pagamento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao cadastrar pagamento.", e);
         }
-
-        Pagamento pagamento = new Pagamento();
-
-        pagamento.setPedido(pedido);
-        pagamento.setTipoPagamento(dto.tipoPagamento());
-        pagamento.setValorPagamento(pedido.getValorTotal());
-        pagamento.setDataPagamento(LocalDateTime.now());
-
-        pagamentoRepository.save(pagamento);
-
-        return toResponse(pagamento);
     }
 
     public List<PagamentoResponse> listarTodos() {
+        try {
+            return pagamentoDAO.listarTodos()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
 
-        return pagamentoRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar pagamentos.", e);
+        }
     }
 
     public PagamentoResponse buscarPorId(Long id) {
+        try {
+            Pagamento pagamento = pagamentoDAO.buscarPorId(id);
 
-        Pagamento pagamento = pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado."));
+            if (pagamento == null) {
+                throw new RuntimeException("Pagamento não encontrado.");
+            }
 
-        return toResponse(pagamento);
+            return toResponse(pagamento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar pagamento.", e);
+        }
     }
 
-    public PagamentoResponse buscarPorPedido(Long idPedido) {
+    public PagamentoResponse buscarPorPedido(Long pedidoId) {
+        try {
+            Pagamento pagamento = pagamentoDAO.buscarPorPedido(pedidoId);
 
-        Pagamento pagamento = pagamentoRepository.findByPedidoId(idPedido)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado para este pedido."));
+            if (pagamento == null) {
+                throw new RuntimeException("Pagamento não encontrado para este pedido.");
+            }
 
-        return toResponse(pagamento);
+            return toResponse(pagamento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar pagamento do pedido.", e);
+        }
     }
 
     private PagamentoResponse toResponse(Pagamento pagamento) {
-
         return new PagamentoResponse(
                 pagamento.getId(),
                 pagamento.getPedido().getId(),

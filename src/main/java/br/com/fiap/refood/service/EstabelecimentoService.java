@@ -1,99 +1,157 @@
 package br.com.fiap.refood.service;
 
+import br.com.fiap.refood.dao.EstabelecimentoDAO;
+import br.com.fiap.refood.dao.UsuarioDAO;
 import br.com.fiap.refood.dto.request.EstabelecimentoRequest;
 import br.com.fiap.refood.dto.response.EstabelecimentoResponse;
 import br.com.fiap.refood.model.Estabelecimento;
 import br.com.fiap.refood.model.Usuario;
 import br.com.fiap.refood.model.enums.TipoUsuario;
-import br.com.fiap.refood.repository.EstabelecimentoRepository;
-import br.com.fiap.refood.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class EstabelecimentoService {
 
-    private final EstabelecimentoRepository estabelecimentoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final EstabelecimentoDAO estabelecimentoDAO;
+    private final UsuarioDAO usuarioDAO;
 
     public EstabelecimentoService(
-            EstabelecimentoRepository estabelecimentoRepository,
-            UsuarioRepository usuarioRepository) {
-        this.estabelecimentoRepository = estabelecimentoRepository;
-        this.usuarioRepository = usuarioRepository;
+            EstabelecimentoDAO estabelecimentoDAO,
+            UsuarioDAO usuarioDAO) {
+        this.estabelecimentoDAO = estabelecimentoDAO;
+        this.usuarioDAO = usuarioDAO;
     }
 
-    @Transactional
     public EstabelecimentoResponse cadastrar(EstabelecimentoRequest dto) {
+        try {
+            Usuario usuario = usuarioDAO.buscarPorId(dto.usuarioId());
 
-        Optional<Usuario> usuarioOptional = usuarioRepository.findById(dto.usuarioId());
+            if (usuario == null) {
+                throw new RuntimeException("Usuário não encontrado.");
+            }
 
-        if (usuarioOptional.isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado.");
+            if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
+                throw new RuntimeException("Apenas comerciantes podem cadastrar estabelecimentos.");
+            }
+
+            boolean jaPossuiEstabelecimento = estabelecimentoDAO.listarTodos().stream()
+                    .anyMatch(e -> e.getUsuario().getId().equals(dto.usuarioId()));
+
+            if (jaPossuiEstabelecimento) {
+                throw new RuntimeException("Este usuário já possui um estabelecimento.");
+            }
+
+            boolean cnpjExiste = estabelecimentoDAO.listarTodos().stream()
+                    .anyMatch(e -> e.getCnpj().equals(dto.cnpj()));
+
+            if (cnpjExiste) {
+                throw new RuntimeException("CNPJ já cadastrado.");
+            }
+
+            Estabelecimento estabelecimento = new Estabelecimento();
+            estabelecimento.setUsuario(usuario);
+            estabelecimento.setNome(dto.nome());
+            estabelecimento.setCnpj(dto.cnpj());
+            estabelecimento.setEndereco(dto.endereco());
+            estabelecimento.setCep(dto.cep());
+            estabelecimento.setTelefone(dto.telefone());
+            estabelecimento.setDescricao(dto.descricao());
+
+            estabelecimentoDAO.inserir(estabelecimento);
+
+            return toResponse(estabelecimento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao cadastrar estabelecimento.", e);
         }
-
-        Usuario usuario = usuarioOptional.get();
-
-        if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
-            throw new RuntimeException("O usuário precisa ser um comerciante.");
-        }
-
-        if (estabelecimentoRepository.findByUsuarioId(usuario.getId()).isPresent()) {
-            throw new RuntimeException("Este usuário já possui um estabelecimento.");
-        }
-
-        Estabelecimento estabelecimento = new Estabelecimento();
-        estabelecimento.setUsuario(usuario);
-        estabelecimento.setNome(dto.nome());
-        estabelecimento.setCnpj(dto.cnpj());
-        estabelecimento.setEndereco(dto.endereco());
-        estabelecimento.setCep(dto.cep());
-        estabelecimento.setTelefone(dto.telefone());
-        estabelecimento.setDescricao(dto.descricao());
-
-        return toResponse(estabelecimentoRepository.save(estabelecimento));
     }
 
-    @Transactional(readOnly = true)
     public List<EstabelecimentoResponse> listarTodos() {
-        return estabelecimentoRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        try {
+            return estabelecimentoDAO.listarTodos()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar estabelecimentos.", e);
+        }
     }
 
-    @Transactional(readOnly = true)
     public EstabelecimentoResponse buscarPorId(Long id) {
-        return toResponse(buscarEstabelecimento(id));
+        try {
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
+
+            if (estabelecimento == null) {
+                throw new RuntimeException("Estabelecimento não encontrado.");
+            }
+
+            return toResponse(estabelecimento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar estabelecimento.", e);
+        }
     }
 
-    @Transactional
-    public EstabelecimentoResponse atualizar(
-            Long id, EstabelecimentoRequest dto) {
+    public EstabelecimentoResponse atualizar(Long id, EstabelecimentoRequest dto) {
+        try {
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
 
-        Estabelecimento estabelecimento = buscarEstabelecimento(id);
+            if (estabelecimento == null) {
+                throw new RuntimeException("Estabelecimento não encontrado.");
+            }
 
-        estabelecimento.setNome(dto.nome());
-        estabelecimento.setCnpj(dto.cnpj());
-        estabelecimento.setEndereco(dto.endereco());
-        estabelecimento.setCep(dto.cep());
-        estabelecimento.setTelefone(dto.telefone());
-        estabelecimento.setDescricao(dto.descricao());
+            Usuario usuario = usuarioDAO.buscarPorId(dto.usuarioId());
 
-        return toResponse(estabelecimentoRepository.save(estabelecimento));
+            if (usuario == null) {
+                throw new RuntimeException("Usuário não encontrado.");
+            }
+
+            if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
+                throw new RuntimeException("O usuário informado não é comerciante.");
+            }
+
+            boolean cnpjExiste = estabelecimentoDAO.listarTodos().stream()
+                    .anyMatch(e -> !e.getId().equals(id)
+                            && e.getCnpj().equals(dto.cnpj()));
+
+            if (cnpjExiste) {
+                throw new RuntimeException("CNPJ já cadastrado.");
+            }
+
+            estabelecimento.setUsuario(usuario);
+            estabelecimento.setNome(dto.nome());
+            estabelecimento.setCnpj(dto.cnpj());
+            estabelecimento.setEndereco(dto.endereco());
+            estabelecimento.setCep(dto.cep());
+            estabelecimento.setTelefone(dto.telefone());
+            estabelecimento.setDescricao(dto.descricao());
+
+            estabelecimentoDAO.atualizar(estabelecimento);
+
+            return toResponse(estabelecimento);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar estabelecimento.", e);
+        }
     }
 
-    @Transactional
     public void excluir(Long id) {
-        estabelecimentoRepository.delete(buscarEstabelecimento(id));
-    }
+        try {
+            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
 
-    private Estabelecimento buscarEstabelecimento(Long id) {
-        return estabelecimentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Estabelecimento não encontrado."));
+            if (estabelecimento == null) {
+                throw new RuntimeException("Estabelecimento não encontrado.");
+            }
+
+            estabelecimentoDAO.excluir(id);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao excluir estabelecimento.", e);
+        }
     }
 
     private EstabelecimentoResponse toResponse(Estabelecimento estabelecimento) {
