@@ -27,9 +27,9 @@ public class ItemPedido {
     @Column(name = "QT_PRODUTO", nullable = false)
     private Integer quantidade;
 
-    @Column(name = "VL_UNITARIO", nullable = false, precision = 10)
+    @Column(name = "VL_UNITARIO", columnDefinition = "NUMBER", nullable = false, precision = 10)
     private Double valorUnitario;
 
-    @Column(name = "VL_SUBTOTAL", nullable = false, precision = 10)
+    @Column(name = "VL_SUBTOTAL", columnDefinition = "NUMBER", nullable = false, precision = 10  )
     private Double valorSubtotal;
 }

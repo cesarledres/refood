@@ -31,10 +31,10 @@ public class Produto {
     @Column(name = "DS_CATEGORIA", nullable = false, length = 50)
     private String categoria;
 
-    @Column(name = "VL_PRECO_ORIGINAL", nullable = false, precision = 10)
+    @Column(name = "VL_PRECO_ORIGINAL", columnDefinition = "NUMBER", nullable = false, precision = 10)
     private Double precoOriginal;
 
-    @Column(name = "VL_PRECO_PROMOCIONAL", nullable = false, precision = 10)
+    @Column(name = "VL_PRECO_PROMOCIONAL", columnDefinition = "NUMBER", nullable = false, precision = 10)
     private Double precoPromocional;
 
     @Column(name = "QT_ESTOQUE", nullable = false)
