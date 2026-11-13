@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         return criarResposta(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.CONFLICT ,
                 ex.getMessage(),
                 request
         );
@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
                 .orElse("Dados enviados inválidos.");
 
         return criarResposta(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.METHOD_NOT_ALLOWED,
                 mensagem,
                 request
         );
