@@ -106,6 +106,16 @@ public class UsuarioService {
                 throw new RecursoNaoEncontradoException("Usuário não encontrado.");
             }
 
+            if (!usuario.getPedidos().isEmpty()) {
+                throw new RegraNegocioException("Não é possível excluir um usuário que possui pedidos."
+                );
+            }
+
+            if (usuario.getEstabelecimento() != null) {
+                throw new RegraNegocioException("Não é possível excluir um usuário associado a um estabelecimento."
+                );
+            }
+
             usuarioDAO.excluir(id);
 
         } catch (SQLException e) {

@@ -1,6 +1,7 @@
 package br.com.fiap.refood.service;
 
 import br.com.fiap.refood.dao.EstabelecimentoDAO;
+import br.com.fiap.refood.dao.ProdutoDAO;
 import br.com.fiap.refood.dao.UsuarioDAO;
 import br.com.fiap.refood.dto.request.EstabelecimentoRequest;
 import br.com.fiap.refood.dto.response.EstabelecimentoResponse;
@@ -20,14 +21,17 @@ public class EstabelecimentoService {
 
     private final EstabelecimentoDAO estabelecimentoDAO;
     private final UsuarioDAO usuarioDAO;
+    private final ProdutoDAO produtoDAO;
     private final ModelMapper modelMapper;
 
     public EstabelecimentoService(
             EstabelecimentoDAO estabelecimentoDAO,
             UsuarioDAO usuarioDAO,
+            ProdutoDAO produtoDAO,
             ModelMapper modelMapper) {
         this.estabelecimentoDAO = estabelecimentoDAO;
         this.usuarioDAO = usuarioDAO;
+        this.produtoDAO = produtoDAO;
         this.modelMapper = modelMapper;
     }
 
@@ -153,6 +157,11 @@ public class EstabelecimentoService {
 
             if (estabelecimento == null) {
                 throw new RecursoNaoEncontradoException("Estabelecimento não encontrado.");
+            }
+
+            if (!estabelecimento.getProdutos().isEmpty()) {
+                throw new RegraNegocioException("Não é possível excluir um estabelecimento que possui produtos."
+                );
             }
 
             estabelecimentoDAO.excluir(id);

@@ -137,6 +137,12 @@ public class ProdutoService {
                 throw new RecursoNaoEncontradoException("Produto não encontrado.");
             }
 
+            if (!produto.getItensPedido().isEmpty()) {
+                throw new RegraNegocioException(
+                        "Não é possível excluir um produto associado a pedidos."
+                );
+            }
+
             produtoDAO.excluir(id);
 
         } catch (SQLException e) {
