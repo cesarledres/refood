@@ -7,7 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -26,7 +28,13 @@ public class ProdutoController {
 
         ProdutoResponse produto = produtoService.cadastrar(dto);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(produto);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(produto.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(produto);
     }
 
     @GetMapping
