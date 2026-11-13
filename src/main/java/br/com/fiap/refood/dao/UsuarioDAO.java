@@ -29,7 +29,9 @@ public class UsuarioDAO {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+                     sql,
+                     new String[]{"ID_USUARIO"}
+             )) {
 
             stmt.setString(1, usuario.getNome());
             stmt.setString(2, usuario.getEmail());
