@@ -24,38 +24,6 @@ public class ModelMapperConfig {
                         org.modelmapper.config.Configuration.AccessLevel.PRIVATE
                 );
 
-        mapper.createTypeMap(
-                EstabelecimentoRequest.class,
-                Estabelecimento.class
-        ).addMappings(m -> m.skip(Estabelecimento::setUsuario));
-
-        mapper.createTypeMap(
-                ProdutoRequest.class,
-                Produto.class
-        ).addMappings(m -> m.skip(Produto::setEstabelecimento));
-
-        mapper.createTypeMap(
-                PedidoRequest.class,
-                Pedido.class
-        ).addMappings(m -> {
-            m.skip(Pedido::setUsuario);
-            m.skip(Pedido::setEstabelecimento);
-            m.skip(Pedido::setItens);
-        });
-
-        mapper.createTypeMap(
-                ItemPedidoRequest.class,
-                ItemPedido.class
-        ).addMappings(m -> {
-            m.skip(ItemPedido::setPedido);
-            m.skip(ItemPedido::setProduto);
-        });
-
-        mapper.createTypeMap(
-                PagamentoRequest.class,
-                Pagamento.class
-        ).addMappings(m -> m.skip(Pagamento::setPedido));
-
         Converter<Usuario, UsuarioResponse> usuarioConverter = context -> {
             Usuario u = context.getSource();
 
