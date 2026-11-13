@@ -33,7 +33,7 @@ public class Pedido {
     @Column(name = "DT_PEDIDO", nullable = false)
     private LocalDateTime dataPedido;
 
-    @Column(name = "VL_TOTAL", nullable = false, precision = 10, scale = 2)
+    @Column(name = "VL_TOTAL", nullable = false, precision = 10)
     private Double valorTotal;
 
     @Enumerated(EnumType.STRING)

@@ -28,7 +28,7 @@ public class Pagamento {
     @Column(name = "TP_PAGAMENTO", nullable = false, length = 30)
     private TipoPagamento tipoPagamento;
 
-    @Column(name = "VL_PAGAMENTO", nullable = false, precision = 10, scale = 2)
+    @Column(name = "VL_PAGAMENTO", nullable = false, precision = 10)
     private Double valorPagamento;
 
     @Column(name = "DT_PAGAMENTO")
