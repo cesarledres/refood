@@ -115,6 +115,31 @@ public class ItemPedidoDAO {
         return itens;
     }
 
+    public List<ItemPedido> listarPorProduto(Long idProduto)
+            throws SQLException {
+
+        String sql = """
+                SELECT * FROM TB_ITEM_PEDIDO
+                WHERE ID_PRODUTO = ?
+                """;
+
+        List<ItemPedido> itens = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, idProduto);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    itens.add(mapearItem(rs));
+                }
+            }
+        }
+
+        return itens;
+    }
+
     public void atualizar(ItemPedido item) throws SQLException {
 
         String sql = """

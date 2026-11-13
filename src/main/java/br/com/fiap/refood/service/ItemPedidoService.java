@@ -42,6 +42,20 @@ public class ItemPedidoService {
         }
     }
 
+    public List<ItemPedidoResponse> listarPorProduto(Long produtoId) {
+        try {
+            List<ItemPedido> itens =
+                    itemPedidoDAO.listarPorPedido(produtoId);
+
+            return itens.stream()
+                    .map(this::toResponse)
+                    .toList();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar itens do pedido.", e);
+        }
+    }
+
     public ItemPedidoResponse buscarPorId(Long id) {
         try {
             ItemPedido item = itemPedidoDAO.buscarPorId(id);
