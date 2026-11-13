@@ -35,7 +35,8 @@ public class ModelMapperConfig {
             );
         };
 
-        mapper.addConverter(usuarioConverter);
+        mapper.createTypeMap(Usuario.class, UsuarioResponse.class)
+                .setConverter(usuarioConverter);
 
         Converter<Estabelecimento, EstabelecimentoResponse> estabelecimentoConverter =
                 context -> {
@@ -53,7 +54,8 @@ public class ModelMapperConfig {
                     );
                 };
 
-        mapper.addConverter(estabelecimentoConverter);
+        mapper.createTypeMap(Estabelecimento.class, EstabelecimentoResponse.class)
+                .setConverter(estabelecimentoConverter);
 
         Converter<Produto, ProdutoResponse> produtoConverter = context -> {
             Produto p = context.getSource();
@@ -71,7 +73,8 @@ public class ModelMapperConfig {
             );
         };
 
-        mapper.addConverter(produtoConverter);
+        mapper.createTypeMap(Produto.class, ProdutoResponse.class)
+                .setConverter(produtoConverter);
 
         Converter<ItemPedido, ItemPedidoResponse> itemConverter = context -> {
             ItemPedido item = context.getSource();
@@ -86,7 +89,8 @@ public class ModelMapperConfig {
             );
         };
 
-        mapper.addConverter(itemConverter);
+        mapper.createTypeMap(ItemPedido.class, ItemPedidoResponse.class)
+                .setConverter(itemConverter);
 
         Converter<Pedido, PedidoResponse> pedidoConverter = context -> {
             Pedido p = context.getSource();
@@ -108,7 +112,8 @@ public class ModelMapperConfig {
             );
         };
 
-        mapper.addConverter(pedidoConverter);
+        mapper.createTypeMap(Pedido.class, PedidoResponse.class)
+                .setConverter(pedidoConverter);
 
         Converter<Pagamento, PagamentoResponse> pagamentoConverter = context -> {
             Pagamento p = context.getSource();
@@ -122,7 +127,8 @@ public class ModelMapperConfig {
             );
         };
 
-        mapper.addConverter(pagamentoConverter);
+        mapper.createTypeMap(Pagamento.class, PagamentoResponse.class)
+                .setConverter(pagamentoConverter);
 
         return mapper;
     }
