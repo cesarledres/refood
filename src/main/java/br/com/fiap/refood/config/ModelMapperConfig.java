@@ -23,7 +23,6 @@ public class ModelMapperConfig {
                         org.modelmapper.config.Configuration.AccessLevel.PRIVATE
                 );
 
-        // Usuario -> UsuarioResponse
         Converter<Usuario, UsuarioResponse> usuarioConverter = context -> {
             Usuario u = context.getSource();
 
@@ -37,7 +36,6 @@ public class ModelMapperConfig {
 
         mapper.addConverter(usuarioConverter);
 
-        // Estabelecimento -> EstabelecimentoResponse
         Converter<Estabelecimento, EstabelecimentoResponse> estabelecimentoConverter =
                 context -> {
                     Estabelecimento e = context.getSource();
@@ -56,7 +54,6 @@ public class ModelMapperConfig {
 
         mapper.addConverter(estabelecimentoConverter);
 
-        // Produto -> ProdutoResponse
         Converter<Produto, ProdutoResponse> produtoConverter = context -> {
             Produto p = context.getSource();
 
@@ -75,7 +72,6 @@ public class ModelMapperConfig {
 
         mapper.addConverter(produtoConverter);
 
-        // ItemPedido -> ItemPedidoResponse
         Converter<ItemPedido, ItemPedidoResponse> itemConverter = context -> {
             ItemPedido item = context.getSource();
 
@@ -91,7 +87,6 @@ public class ModelMapperConfig {
 
         mapper.addConverter(itemConverter);
 
-        // Pedido -> PedidoResponse
         Converter<Pedido, PedidoResponse> pedidoConverter = context -> {
             Pedido p = context.getSource();
 
@@ -114,7 +109,6 @@ public class ModelMapperConfig {
 
         mapper.addConverter(pedidoConverter);
 
-        // Pagamento -> PagamentoResponse
         Converter<Pagamento, PagamentoResponse> pagamentoConverter = context -> {
             Pagamento p = context.getSource();
 
