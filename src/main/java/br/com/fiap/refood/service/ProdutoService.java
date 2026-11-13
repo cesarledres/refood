@@ -6,6 +6,7 @@ import br.com.fiap.refood.dto.request.ProdutoRequest;
 import br.com.fiap.refood.dto.response.ProdutoResponse;
 import br.com.fiap.refood.model.Estabelecimento;
 import br.com.fiap.refood.model.Produto;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -17,12 +18,15 @@ public class ProdutoService {
 
     private final ProdutoDAO produtoDAO;
     private final EstabelecimentoDAO estabelecimentoDAO;
+    private final ModelMapper modelMapper;
 
     public ProdutoService(
             ProdutoDAO produtoDAO,
-            EstabelecimentoDAO estabelecimentoDAO) {
+            EstabelecimentoDAO estabelecimentoDAO,
+            ModelMapper modelMapper) {
         this.produtoDAO = produtoDAO;
         this.estabelecimentoDAO = estabelecimentoDAO;
+        this.modelMapper = modelMapper;
     }
 
     public ProdutoResponse cadastrar(ProdutoRequest dto) {
@@ -34,29 +38,14 @@ public class ProdutoService {
                 throw new RuntimeException("Estabelecimento não encontrado.");
             }
 
-            validarPrecos(dto.precoOriginal(), dto.precoPromocional());
+            validarProduto(dto);
 
-            if (dto.quantidadeEstoque() <= 0) {
-                throw new RuntimeException("A quantidade em estoque deve ser maior que zero.");
-            }
-
-            if (dto.dataValidade().isBefore(LocalDate.now())) {
-                throw new RuntimeException("Não é possível cadastrar um produto vencido.");
-            }
-
-            Produto produto = new Produto();
+            Produto produto = modelMapper.map(dto, Produto.class);
             produto.setEstabelecimento(estabelecimento);
-            produto.setNome(dto.nome());
-            produto.setCategoria(dto.categoria());
-            produto.setPrecoOriginal(dto.precoOriginal());
-            produto.setPrecoPromocional(dto.precoPromocional());
-            produto.setQuantidadeEstoque(dto.quantidadeEstoque());
-            produto.setDataValidade(dto.dataValidade());
-            produto.setImagem(dto.imagem());
 
             produtoDAO.inserir(produto);
 
-            return toResponse(produto);
+            return modelMapper.map(produto, ProdutoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar produto.", e);
@@ -65,9 +54,8 @@ public class ProdutoService {
 
     public List<ProdutoResponse> listarTodos() {
         try {
-            return produtoDAO.listarTodos()
-                    .stream()
-                    .map(this::toResponse)
+            return produtoDAO.listarTodos().stream()
+                    .map(p -> modelMapper.map(p, ProdutoResponse.class))
                     .toList();
 
         } catch (SQLException e) {
@@ -84,14 +72,15 @@ public class ProdutoService {
                 throw new RuntimeException("Estabelecimento não encontrado.");
             }
 
-            return produtoDAO.listarTodos()
-                    .stream()
-                    .filter(p -> p.getEstabelecimento().getId().equals(estabelecimentoId))
-                    .map(this::toResponse)
+            return produtoDAO.listarTodos().stream()
+                    .filter(p -> p.getEstabelecimento().getId()
+                            .equals(estabelecimentoId))
+                    .map(p -> modelMapper.map(p, ProdutoResponse.class))
                     .toList();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao listar produtos do estabelecimento.", e);
+            throw new RuntimeException(
+                    "Erro ao listar produtos do estabelecimento.", e);
         }
     }
 
@@ -103,7 +92,7 @@ public class ProdutoService {
                 throw new RuntimeException("Produto não encontrado.");
             }
 
-            return toResponse(produto);
+            return modelMapper.map(produto, ProdutoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar produto.", e);
@@ -125,28 +114,15 @@ public class ProdutoService {
                 throw new RuntimeException("Estabelecimento não encontrado.");
             }
 
-            validarPrecos(dto.precoOriginal(), dto.precoPromocional());
+            validarProduto(dto);
 
-            if (dto.quantidadeEstoque() < 0) {
-                throw new RuntimeException("A quantidade em estoque não pode ser negativa.");
-            }
+            Produto atualizado = modelMapper.map(dto, Produto.class);
+            atualizado.setId(id);
+            atualizado.setEstabelecimento(estabelecimento);
 
-            if (dto.dataValidade().isBefore(LocalDate.now())) {
-                throw new RuntimeException("Não é possível cadastrar um produto vencido.");
-            }
+            produtoDAO.atualizar(atualizado);
 
-            produto.setEstabelecimento(estabelecimento);
-            produto.setNome(dto.nome());
-            produto.setCategoria(dto.categoria());
-            produto.setPrecoOriginal(dto.precoOriginal());
-            produto.setPrecoPromocional(dto.precoPromocional());
-            produto.setQuantidadeEstoque(dto.quantidadeEstoque());
-            produto.setDataValidade(dto.dataValidade());
-            produto.setImagem(dto.imagem());
-
-            produtoDAO.atualizar(produto);
-
-            return toResponse(produto);
+            return modelMapper.map(atualizado, ProdutoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar produto.", e);
@@ -168,31 +144,27 @@ public class ProdutoService {
         }
     }
 
-    private void validarPrecos(Double precoOriginal, Double precoPromocional) {
-        if (precoOriginal == null || precoOriginal <= 0) {
+    private void validarProduto(ProdutoRequest dto) {
+        if (dto.precoOriginal() == null || dto.precoOriginal() <= 0) {
             throw new RuntimeException("O preço original deve ser maior que zero.");
         }
 
-        if (precoPromocional == null || precoPromocional <= 0) {
+        if (dto.precoPromocional() == null || dto.precoPromocional() <= 0) {
             throw new RuntimeException("O preço promocional deve ser maior que zero.");
         }
 
-        if (precoPromocional >= precoOriginal) {
-            throw new RuntimeException("O preço promocional deve ser menor que o original.");
+        if (dto.precoPromocional() >= dto.precoOriginal()) {
+            throw new RuntimeException(
+                    "O preço promocional deve ser menor que o original.");
         }
-    }
 
-    private ProdutoResponse toResponse(Produto produto) {
-        return new ProdutoResponse(
-                produto.getId(),
-                produto.getEstabelecimento().getId(),
-                produto.getNome(),
-                produto.getCategoria(),
-                produto.getPrecoOriginal(),
-                produto.getPrecoPromocional(),
-                produto.getQuantidadeEstoque(),
-                produto.getDataValidade(),
-                produto.getImagem()
-        );
+        if (dto.quantidadeEstoque() == null || dto.quantidadeEstoque() < 0) {
+            throw new RuntimeException("Quantidade em estoque inválida.");
+        }
+
+        if (dto.dataValidade() == null
+                || dto.dataValidade().isBefore(LocalDate.now())) {
+            throw new RuntimeException("A data de validade é inválida.");
+        }
     }
 }

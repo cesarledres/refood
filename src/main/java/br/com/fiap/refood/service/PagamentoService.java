@@ -6,6 +6,7 @@ import br.com.fiap.refood.dto.request.PagamentoRequest;
 import br.com.fiap.refood.dto.response.PagamentoResponse;
 import br.com.fiap.refood.model.Pagamento;
 import br.com.fiap.refood.model.Pedido;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -17,12 +18,15 @@ public class PagamentoService {
 
     private final PagamentoDAO pagamentoDAO;
     private final PedidoDAO pedidoDAO;
+    private final ModelMapper modelMapper;
 
     public PagamentoService(
             PagamentoDAO pagamentoDAO,
-            PedidoDAO pedidoDAO) {
+            PedidoDAO pedidoDAO,
+            ModelMapper modelMapper) {
         this.pagamentoDAO = pagamentoDAO;
         this.pedidoDAO = pedidoDAO;
+        this.modelMapper = modelMapper;
     }
 
     public PagamentoResponse cadastrar(PagamentoRequest dto) {
@@ -37,18 +41,20 @@ public class PagamentoService {
                     pagamentoDAO.buscarPorPedido(dto.pedidoId());
 
             if (pagamentoExistente != null) {
-                throw new RuntimeException("Este pedido já possui um pagamento.");
+                throw new RuntimeException(
+                        "Este pedido já possui um pagamento.");
             }
 
-            Pagamento pagamento = new Pagamento();
+            Pagamento pagamento =
+                    modelMapper.map(dto, Pagamento.class);
+
             pagamento.setPedido(pedido);
-            pagamento.setTipoPagamento(dto.tipoPagamento());
             pagamento.setValorPagamento(pedido.getValorTotal());
             pagamento.setDataPagamento(LocalDateTime.now());
 
             pagamentoDAO.inserir(pagamento);
 
-            return toResponse(pagamento);
+            return modelMapper.map(pagamento, PagamentoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar pagamento.", e);
@@ -57,8 +63,7 @@ public class PagamentoService {
 
     public List<PagamentoResponse> listarTodos() {
         try {
-            return pagamentoDAO.listarTodos()
-                    .stream()
+            return pagamentoDAO.listarTodos().stream()
                     .map(this::toResponse)
                     .toList();
 
@@ -84,26 +89,23 @@ public class PagamentoService {
 
     public PagamentoResponse buscarPorPedido(Long pedidoId) {
         try {
-            Pagamento pagamento = pagamentoDAO.buscarPorPedido(pedidoId);
+            Pagamento pagamento =
+                    pagamentoDAO.buscarPorPedido(pedidoId);
 
             if (pagamento == null) {
-                throw new RuntimeException("Pagamento não encontrado para este pedido.");
+                throw new RuntimeException(
+                        "Pagamento não encontrado para este pedido.");
             }
 
             return toResponse(pagamento);
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar pagamento do pedido.", e);
+            throw new RuntimeException(
+                    "Erro ao buscar pagamento do pedido.", e);
         }
     }
 
     private PagamentoResponse toResponse(Pagamento pagamento) {
-        return new PagamentoResponse(
-                pagamento.getId(),
-                pagamento.getPedido().getId(),
-                pagamento.getTipoPagamento(),
-                pagamento.getValorPagamento(),
-                pagamento.getDataPagamento()
-        );
+        return modelMapper.map(pagamento, PagamentoResponse.class);
     }
 }

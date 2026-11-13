@@ -1,16 +1,11 @@
 package br.com.fiap.refood.service;
 
-import br.com.fiap.refood.dao.EstabelecimentoDAO;
-import br.com.fiap.refood.dao.ItemPedidoDAO;
-import br.com.fiap.refood.dao.PedidoDAO;
-import br.com.fiap.refood.dao.ProdutoDAO;
-import br.com.fiap.refood.dao.UsuarioDAO;
-import br.com.fiap.refood.dto.request.ItemPedidoRequest;
-import br.com.fiap.refood.dto.request.PedidoRequest;
-import br.com.fiap.refood.dto.response.ItemPedidoResponse;
-import br.com.fiap.refood.dto.response.PedidoResponse;
+import br.com.fiap.refood.dao.*;
+import br.com.fiap.refood.dto.request.*;
+import br.com.fiap.refood.dto.response.*;
 import br.com.fiap.refood.model.*;
 import br.com.fiap.refood.model.enums.StatusPedido;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -27,19 +22,22 @@ public class PedidoService {
     private final EstabelecimentoDAO estabelecimentoDAO;
     private final ProdutoDAO produtoDAO;
     private final ItemPedidoDAO itemPedidoDAO;
+    private final ModelMapper modelMapper;
 
     public PedidoService(
             PedidoDAO pedidoDAO,
             UsuarioDAO usuarioDAO,
             EstabelecimentoDAO estabelecimentoDAO,
             ProdutoDAO produtoDAO,
-            ItemPedidoDAO itemPedidoDAO) {
+            ItemPedidoDAO itemPedidoDAO,
+            ModelMapper modelMapper) {
 
         this.pedidoDAO = pedidoDAO;
         this.usuarioDAO = usuarioDAO;
         this.estabelecimentoDAO = estabelecimentoDAO;
         this.produtoDAO = produtoDAO;
         this.itemPedidoDAO = itemPedidoDAO;
+        this.modelMapper = modelMapper;
     }
 
     public PedidoResponse cadastrar(PedidoRequest dto) {
@@ -58,10 +56,12 @@ public class PedidoService {
             }
 
             if (dto.itens() == null || dto.itens().isEmpty()) {
-                throw new RuntimeException("O pedido precisa ter pelo menos um item.");
+                throw new RuntimeException(
+                        "O pedido precisa ter pelo menos um item.");
             }
 
-            Pedido pedido = new Pedido();
+            Pedido pedido = modelMapper.map(dto, Pedido.class);
+
             pedido.setUsuario(usuario);
             pedido.setEstabelecimento(estabelecimento);
             pedido.setDataPedido(LocalDateTime.now());
@@ -71,14 +71,16 @@ public class PedidoService {
             pedidoDAO.inserir(pedido);
 
             double valorTotal = 0.0;
-            List<ItemPedidoResponse> itensResponse = new ArrayList<>();
+            List<ItemPedido> itens = new ArrayList<>();
 
             for (ItemPedidoRequest itemDTO : dto.itens()) {
 
-                Produto produto = produtoDAO.buscarPorId(itemDTO.produtoId());
+                Produto produto =
+                        produtoDAO.buscarPorId(itemDTO.produtoId());
 
                 if (produto == null) {
-                    throw new RuntimeException("Produto não encontrado: " + itemDTO.produtoId());
+                    throw new RuntimeException(
+                            "Produto não encontrado: " + itemDTO.produtoId());
                 }
 
                 if (!produto.getEstabelecimento().getId()
@@ -92,57 +94,47 @@ public class PedidoService {
                             "O produto " + produto.getNome() + " está vencido.");
                 }
 
-                if (itemDTO.quantidade() == null || itemDTO.quantidade() <= 0) {
-                    throw new RuntimeException("A quantidade deve ser maior que zero.");
+                if (itemDTO.quantidade() == null
+                        || itemDTO.quantidade() <= 0) {
+                    throw new RuntimeException(
+                            "A quantidade deve ser maior que zero.");
                 }
 
                 if (produto.getQuantidadeEstoque() < itemDTO.quantidade()) {
                     throw new RuntimeException(
-                            "Estoque insuficiente para o produto " + produto.getNome());
+                            "Estoque insuficiente para " + produto.getNome());
                 }
 
                 double valorUnitario = produto.getPrecoPromocional();
                 double valorSubtotal = valorUnitario * itemDTO.quantidade();
 
-                ItemPedido item = new ItemPedido();
+                ItemPedido item =
+                        modelMapper.map(itemDTO, ItemPedido.class);
+
                 item.setPedido(pedido);
                 item.setProduto(produto);
-                item.setQuantidade(itemDTO.quantidade());
                 item.setValorUnitario(valorUnitario);
                 item.setValorSubtotal(valorSubtotal);
 
                 itemPedidoDAO.inserir(item);
 
                 produto.setQuantidadeEstoque(
-                        produto.getQuantidadeEstoque() - itemDTO.quantidade()
+                        produto.getQuantidadeEstoque()
+                                - itemDTO.quantidade()
                 );
 
                 produtoDAO.atualizar(produto);
 
                 valorTotal += valorSubtotal;
-
-                itensResponse.add(new ItemPedidoResponse(
-                        item.getId(),
-                        produto.getId(),
-                        produto.getNome(),
-                        item.getQuantidade(),
-                        item.getValorUnitario(),
-                        item.getValorSubtotal()
-                ));
+                itens.add(item);
             }
 
+            pedido.setItens(itens);
             pedido.setValorTotal(valorTotal);
+
             pedidoDAO.atualizar(pedido);
 
-            return new PedidoResponse(
-                    pedido.getId(),
-                    usuario.getId(),
-                    estabelecimento.getId(),
-                    pedido.getDataPedido(),
-                    pedido.getValorTotal(),
-                    pedido.getStatus(),
-                    itensResponse
-            );
+            return modelMapper.map(pedido, PedidoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar pedido.", e);
@@ -151,8 +143,7 @@ public class PedidoService {
 
     public List<PedidoResponse> listarTodos() {
         try {
-            return pedidoDAO.listarTodos()
-                    .stream()
+            return pedidoDAO.listarTodos().stream()
                     .map(this::toResponse)
                     .toList();
 
@@ -184,8 +175,7 @@ public class PedidoService {
                 throw new RuntimeException("Usuário não encontrado.");
             }
 
-            return pedidoDAO.listarTodos()
-                    .stream()
+            return pedidoDAO.listarTodos().stream()
                     .filter(p -> p.getUsuario().getId().equals(usuarioId))
                     .map(this::toResponse)
                     .toList();
@@ -204,14 +194,15 @@ public class PedidoService {
                 throw new RuntimeException("Estabelecimento não encontrado.");
             }
 
-            return pedidoDAO.listarTodos()
-                    .stream()
-                    .filter(p -> p.getEstabelecimento().getId().equals(estabelecimentoId))
+            return pedidoDAO.listarTodos().stream()
+                    .filter(p -> p.getEstabelecimento().getId()
+                            .equals(estabelecimentoId))
                     .map(this::toResponse)
                     .toList();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao listar pedidos do estabelecimento.", e);
+            throw new RuntimeException(
+                    "Erro ao listar pedidos do estabelecimento.", e);
         }
     }
 
@@ -235,40 +226,22 @@ public class PedidoService {
 
     private PedidoResponse toResponse(Pedido pedido) {
         try {
-            List<ItemPedidoResponse> itens = itemPedidoDAO.listarPorPedido(pedido.getId())
-                    .stream()
-                    .map(item -> {
-                        try {
-                            Produto produto = produtoDAO.buscarPorId(
-                                    item.getProduto().getId()
-                            );
+            List<ItemPedido> itens =
+                    itemPedidoDAO.listarPorPedido(pedido.getId());
 
-                            return new ItemPedidoResponse(
-                                    item.getId(),
-                                    produto.getId(),
-                                    produto.getNome(),
-                                    item.getQuantidade(),
-                                    item.getValorUnitario(),
-                                    item.getValorSubtotal()
-                            );
+            for (ItemPedido item : itens) {
+                Produto produto =
+                        produtoDAO.buscarPorId(item.getProduto().getId());
 
-                        } catch (SQLException e) {
-                            throw new RuntimeException("Erro ao buscar produto do pedido.", e);
-                        }
-                    })
-                    .toList();
+                item.setProduto(produto);
+            }
 
-            return new PedidoResponse(
-                    pedido.getId(),
-                    pedido.getUsuario().getId(),
-                    pedido.getEstabelecimento().getId(),
-                    pedido.getDataPedido(),
-                    pedido.getValorTotal(),
-                    pedido.getStatus(),
-                    itens
-            );
-        }catch (SQLException e) {
-        throw new RuntimeException ("Erro ao converter pedido.", e);
-    }
+            pedido.setItens(itens);
+
+            return modelMapper.map(pedido, PedidoResponse.class);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao converter pedido.", e);
+        }
     }
 }

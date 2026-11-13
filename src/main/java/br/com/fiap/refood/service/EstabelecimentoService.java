@@ -7,6 +7,7 @@ import br.com.fiap.refood.dto.response.EstabelecimentoResponse;
 import br.com.fiap.refood.model.Estabelecimento;
 import br.com.fiap.refood.model.Usuario;
 import br.com.fiap.refood.model.enums.TipoUsuario;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -17,12 +18,15 @@ public class EstabelecimentoService {
 
     private final EstabelecimentoDAO estabelecimentoDAO;
     private final UsuarioDAO usuarioDAO;
+    private final ModelMapper modelMapper;
 
     public EstabelecimentoService(
             EstabelecimentoDAO estabelecimentoDAO,
-            UsuarioDAO usuarioDAO) {
+            UsuarioDAO usuarioDAO,
+            ModelMapper modelMapper) {
         this.estabelecimentoDAO = estabelecimentoDAO;
         this.usuarioDAO = usuarioDAO;
+        this.modelMapper = modelMapper;
     }
 
     public EstabelecimentoResponse cadastrar(EstabelecimentoRequest dto) {
@@ -34,14 +38,16 @@ public class EstabelecimentoService {
             }
 
             if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
-                throw new RuntimeException("Apenas comerciantes podem cadastrar estabelecimentos.");
+                throw new RuntimeException(
+                        "Apenas comerciantes podem cadastrar estabelecimentos.");
             }
 
-            boolean jaPossuiEstabelecimento = estabelecimentoDAO.listarTodos().stream()
+            boolean usuarioJaPossui = estabelecimentoDAO.listarTodos().stream()
                     .anyMatch(e -> e.getUsuario().getId().equals(dto.usuarioId()));
 
-            if (jaPossuiEstabelecimento) {
-                throw new RuntimeException("Este usuário já possui um estabelecimento.");
+            if (usuarioJaPossui) {
+                throw new RuntimeException(
+                        "Este usuário já possui um estabelecimento.");
             }
 
             boolean cnpjExiste = estabelecimentoDAO.listarTodos().stream()
@@ -51,18 +57,15 @@ public class EstabelecimentoService {
                 throw new RuntimeException("CNPJ já cadastrado.");
             }
 
-            Estabelecimento estabelecimento = new Estabelecimento();
+            Estabelecimento estabelecimento =
+                    modelMapper.map(dto, Estabelecimento.class);
+
             estabelecimento.setUsuario(usuario);
-            estabelecimento.setNome(dto.nome());
-            estabelecimento.setCnpj(dto.cnpj());
-            estabelecimento.setEndereco(dto.endereco());
-            estabelecimento.setCep(dto.cep());
-            estabelecimento.setTelefone(dto.telefone());
-            estabelecimento.setDescricao(dto.descricao());
 
             estabelecimentoDAO.inserir(estabelecimento);
 
-            return toResponse(estabelecimento);
+            return modelMapper.map(
+                    estabelecimento, EstabelecimentoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar estabelecimento.", e);
@@ -71,9 +74,8 @@ public class EstabelecimentoService {
 
     public List<EstabelecimentoResponse> listarTodos() {
         try {
-            return estabelecimentoDAO.listarTodos()
-                    .stream()
-                    .map(this::toResponse)
+            return estabelecimentoDAO.listarTodos().stream()
+                    .map(e -> modelMapper.map(e, EstabelecimentoResponse.class))
                     .toList();
 
         } catch (SQLException e) {
@@ -83,22 +85,26 @@ public class EstabelecimentoService {
 
     public EstabelecimentoResponse buscarPorId(Long id) {
         try {
-            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
+            Estabelecimento estabelecimento =
+                    estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
                 throw new RuntimeException("Estabelecimento não encontrado.");
             }
 
-            return toResponse(estabelecimento);
+            return modelMapper.map(
+                    estabelecimento, EstabelecimentoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar estabelecimento.", e);
         }
     }
 
-    public EstabelecimentoResponse atualizar(Long id, EstabelecimentoRequest dto) {
+    public EstabelecimentoResponse atualizar(
+            Long id, EstabelecimentoRequest dto) {
         try {
-            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
+            Estabelecimento estabelecimento =
+                    estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
                 throw new RuntimeException("Estabelecimento não encontrado.");
@@ -111,7 +117,7 @@ public class EstabelecimentoService {
             }
 
             if (usuario.getTipoUsuario() != TipoUsuario.COMERCIANTE) {
-                throw new RuntimeException("O usuário informado não é comerciante.");
+                throw new RuntimeException("O usuário não é comerciante.");
             }
 
             boolean cnpjExiste = estabelecimentoDAO.listarTodos().stream()
@@ -122,17 +128,16 @@ public class EstabelecimentoService {
                 throw new RuntimeException("CNPJ já cadastrado.");
             }
 
-            estabelecimento.setUsuario(usuario);
-            estabelecimento.setNome(dto.nome());
-            estabelecimento.setCnpj(dto.cnpj());
-            estabelecimento.setEndereco(dto.endereco());
-            estabelecimento.setCep(dto.cep());
-            estabelecimento.setTelefone(dto.telefone());
-            estabelecimento.setDescricao(dto.descricao());
+            Estabelecimento atualizado =
+                    modelMapper.map(dto, Estabelecimento.class);
 
-            estabelecimentoDAO.atualizar(estabelecimento);
+            atualizado.setId(id);
+            atualizado.setUsuario(usuario);
 
-            return toResponse(estabelecimento);
+            estabelecimentoDAO.atualizar(atualizado);
+
+            return modelMapper.map(
+                    atualizado, EstabelecimentoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar estabelecimento.", e);
@@ -141,7 +146,8 @@ public class EstabelecimentoService {
 
     public void excluir(Long id) {
         try {
-            Estabelecimento estabelecimento = estabelecimentoDAO.buscarPorId(id);
+            Estabelecimento estabelecimento =
+                    estabelecimentoDAO.buscarPorId(id);
 
             if (estabelecimento == null) {
                 throw new RuntimeException("Estabelecimento não encontrado.");
@@ -152,18 +158,5 @@ public class EstabelecimentoService {
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao excluir estabelecimento.", e);
         }
-    }
-
-    private EstabelecimentoResponse toResponse(Estabelecimento estabelecimento) {
-        return new EstabelecimentoResponse(
-                estabelecimento.getId(),
-                estabelecimento.getUsuario().getId(),
-                estabelecimento.getNome(),
-                estabelecimento.getCnpj(),
-                estabelecimento.getEndereco(),
-                estabelecimento.getCep(),
-                estabelecimento.getTelefone(),
-                estabelecimento.getDescricao()
-        );
     }
 }

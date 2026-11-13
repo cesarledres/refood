@@ -4,6 +4,7 @@ import br.com.fiap.refood.dao.UsuarioDAO;
 import br.com.fiap.refood.dto.request.UsuarioRequest;
 import br.com.fiap.refood.dto.response.UsuarioResponse;
 import br.com.fiap.refood.model.Usuario;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -13,9 +14,11 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioDAO usuarioDAO;
+    private final ModelMapper modelMapper;
 
-    public UsuarioService(UsuarioDAO usuarioDAO) {
+    public UsuarioService(UsuarioDAO usuarioDAO, ModelMapper modelMapper) {
         this.usuarioDAO = usuarioDAO;
+        this.modelMapper = modelMapper;
     }
 
     public UsuarioResponse cadastrar(UsuarioRequest dto) {
@@ -27,15 +30,12 @@ public class UsuarioService {
                 throw new RuntimeException("E-mail já cadastrado.");
             }
 
-            Usuario usuario = new Usuario();
-            usuario.setNome(dto.nome());
-            usuario.setEmail(dto.email());
+            Usuario usuario = modelMapper.map(dto, Usuario.class);
             usuario.setSenha(dto.senha());
-            usuario.setTipoUsuario(dto.tipoUsuario());
 
             usuarioDAO.inserir(usuario);
 
-            return toResponse(usuario);
+            return modelMapper.map(usuario, UsuarioResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar usuário.", e);
@@ -44,9 +44,8 @@ public class UsuarioService {
 
     public List<UsuarioResponse> listarTodos() {
         try {
-            return usuarioDAO.listarTodos()
-                    .stream()
-                    .map(this::toResponse)
+            return usuarioDAO.listarTodos().stream()
+                    .map(usuario -> modelMapper.map(usuario, UsuarioResponse.class))
                     .toList();
 
         } catch (SQLException e) {
@@ -62,7 +61,7 @@ public class UsuarioService {
                 throw new RuntimeException("Usuário não encontrado.");
             }
 
-            return toResponse(usuario);
+            return modelMapper.map(usuario, UsuarioResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar usuário.", e);
@@ -85,14 +84,13 @@ public class UsuarioService {
                 throw new RuntimeException("E-mail já cadastrado.");
             }
 
-            usuario.setNome(dto.nome());
-            usuario.setEmail(dto.email());
-            usuario.setSenha(dto.senha());
-            usuario.setTipoUsuario(dto.tipoUsuario());
+            Usuario atualizado = modelMapper.map(dto, Usuario.class);
+            atualizado.setId(id);
+            atualizado.setSenha(dto.senha());
 
-            usuarioDAO.atualizar(usuario);
+            usuarioDAO.atualizar(atualizado);
 
-            return toResponse(usuario);
+            return modelMapper.map(atualizado, UsuarioResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar usuário.", e);
@@ -112,14 +110,5 @@ public class UsuarioService {
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao excluir usuário.", e);
         }
-    }
-
-    private UsuarioResponse toResponse(Usuario usuario) {
-        return new UsuarioResponse(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getTipoUsuario()
-        );
     }
 }

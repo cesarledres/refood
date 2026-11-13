@@ -5,6 +5,7 @@ import br.com.fiap.refood.dao.ProdutoDAO;
 import br.com.fiap.refood.dto.response.ItemPedidoResponse;
 import br.com.fiap.refood.model.ItemPedido;
 import br.com.fiap.refood.model.Produto;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -15,18 +16,23 @@ public class ItemPedidoService {
 
     private final ItemPedidoDAO itemPedidoDAO;
     private final ProdutoDAO produtoDAO;
+    private final ModelMapper modelMapper;
 
     public ItemPedidoService(
             ItemPedidoDAO itemPedidoDAO,
-            ProdutoDAO produtoDAO) {
+            ProdutoDAO produtoDAO,
+            ModelMapper modelMapper) {
         this.itemPedidoDAO = itemPedidoDAO;
         this.produtoDAO = produtoDAO;
+        this.modelMapper = modelMapper;
     }
 
     public List<ItemPedidoResponse> listarPorPedido(Long pedidoId) {
         try {
-            return itemPedidoDAO.listarPorPedido(pedidoId)
-                    .stream()
+            List<ItemPedido> itens =
+                    itemPedidoDAO.listarPorPedido(pedidoId);
+
+            return itens.stream()
                     .map(this::toResponse)
                     .toList();
 
@@ -40,7 +46,8 @@ public class ItemPedidoService {
             ItemPedido item = itemPedidoDAO.buscarPorId(id);
 
             if (item == null) {
-                throw new RuntimeException("Item do pedido não encontrado.");
+                throw new RuntimeException(
+                        "Item do pedido não encontrado.");
             }
 
             return toResponse(item);
@@ -52,22 +59,16 @@ public class ItemPedidoService {
 
     private ItemPedidoResponse toResponse(ItemPedido item) {
         try {
-            Produto produto = produtoDAO.buscarPorId(
-                    item.getProduto().getId()
-            );
+            Produto produto =
+                    produtoDAO.buscarPorId(item.getProduto().getId());
 
             if (produto == null) {
-                throw new RuntimeException("Produto do item não encontrado.");
+                throw new RuntimeException("Produto não encontrado.");
             }
 
-            return new ItemPedidoResponse(
-                    item.getId(),
-                    produto.getId(),
-                    produto.getNome(),
-                    item.getQuantidade(),
-                    item.getValorUnitario(),
-                    item.getValorSubtotal()
-            );
+            item.setProduto(produto);
+
+            return modelMapper.map(item, ItemPedidoResponse.class);
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao converter item do pedido.", e);
