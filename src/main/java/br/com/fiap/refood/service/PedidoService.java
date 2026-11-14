@@ -60,7 +60,10 @@ public class PedidoService {
                 throw new RegraNegocioException("O pedido precisa ter pelo menos um item.");
             }
 
-            Pedido pedido = modelMapper.map(dto, Pedido.class);
+            Pedido pedido = new Pedido();
+
+            pedido.setUsuario(usuario);
+            pedido.setEstabelecimento(estabelecimento);
 
             pedido.setUsuario(usuario);
             pedido.setEstabelecimento(estabelecimento);
