@@ -33,7 +33,9 @@ public class ProdutoDAO {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+                     sql,
+                     new String[]{"ID_PRODUTO"}
+             )) {
 
             stmt.setLong(1, produto.getEstabelecimento().getId());
             stmt.setString(2, produto.getNome());

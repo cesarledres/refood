@@ -33,7 +33,9 @@ public class PedidoDAO {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+                     sql,
+                     new String[]{"ID_PEDIDO"}
+             )) {
 
             stmt.setLong(1, pedido.getUsuario().getId());
             stmt.setLong(2, pedido.getEstabelecimento().getId());

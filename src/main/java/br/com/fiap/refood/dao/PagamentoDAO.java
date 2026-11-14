@@ -31,7 +31,9 @@ public class PagamentoDAO {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+                     sql,
+                     new String[]{"ID_PAGAMENTO"}
+             )) {
 
             stmt.setLong(1, pagamento.getPedido().getId());
             stmt.setString(2, pagamento.getTipoPagamento().name());

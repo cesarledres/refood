@@ -32,7 +32,9 @@ public class ItemPedidoDAO {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+                     sql,
+                     new String[]{"ID_ITEM"}
+             )) {
 
             stmt.setLong(1, item.getPedido().getId());
             stmt.setLong(2, item.getProduto().getId());
