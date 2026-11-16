@@ -92,7 +92,7 @@ public class PagamentoService {
             Pagamento pagamento = pagamentoDAO.buscarPorPedido(pedidoId);
 
             if (pagamento == null) {
-                throw new RegraNegocioException("Pagamento não encontrado para este pedido.");
+                throw new RecursoNaoEncontradoException("Pagamento não encontrado para este pedido.");
             }
 
             return toResponse(pagamento);
