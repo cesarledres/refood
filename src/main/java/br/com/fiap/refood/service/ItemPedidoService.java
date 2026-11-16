@@ -45,7 +45,7 @@ public class ItemPedidoService {
     public List<ItemPedidoResponse> listarPorProduto(Long produtoId) {
         try {
             List<ItemPedido> itens =
-                    itemPedidoDAO.listarPorPedido(produtoId);
+                    itemPedidoDAO.listarPorProduto(produtoId);
 
             return itens.stream()
                     .map(this::toResponse)
