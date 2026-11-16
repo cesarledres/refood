@@ -24,7 +24,7 @@ public class EstabelecimentoDAO {
 
         String sql = """
                 INSERT INTO TB_ESTABELECIMENTO
-                (ID_USUARIO, NM_ESTABELECIMENTO, CNPJ,
+                (ID_USUARIO, NM_ESTABELECIMENTO, NR_CNPJ,
                  DS_ENDERECO, NR_CEP, NR_TELEFONE, DS_DESCRICAO)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
@@ -99,7 +99,7 @@ public class EstabelecimentoDAO {
                 UPDATE TB_ESTABELECIMENTO
                 SET ID_USUARIO = ?,
                     NM_ESTABELECIMENTO = ?,
-                    CNPJ = ?,
+                    NR_CNPJ = ?,
                     DS_ENDERECO = ?,
                     NR_CEP = ?,
                     NR_TELEFONE = ?,
@@ -149,7 +149,7 @@ public class EstabelecimentoDAO {
         estabelecimento.setId(rs.getLong("ID_ESTABELECIMENTO"));
         estabelecimento.setUsuario(usuario);
         estabelecimento.setNome(rs.getString("NM_ESTABELECIMENTO"));
-        estabelecimento.setCnpj(rs.getString("CNPJ"));
+        estabelecimento.setCnpj(rs.getString("NR_CNPJ"));
         estabelecimento.setEndereco(rs.getString("DS_ENDERECO"));
         estabelecimento.setCep(rs.getString("NR_CEP"));
         estabelecimento.setTelefone(rs.getString("NR_TELEFONE"));

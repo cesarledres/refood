@@ -23,7 +23,7 @@ public class UsuarioDAO {
 
         String sql = """
                 INSERT INTO TB_USUARIO
-                (NM_USUARIO, EMAIL, SENHA, TIPO_USUARIO)
+                (NM_USUARIO, DS_EMAIL, DS_SENHA, TP_USUARIO)
                 VALUES (?, ?, ?, ?)
                 """;
 
@@ -93,9 +93,9 @@ public class UsuarioDAO {
         String sql = """
                 UPDATE TB_USUARIO
                 SET NM_USUARIO = ?,
-                    EMAIL = ?,
-                    SENHA = ?,
-                    TIPO_USUARIO = ?
+                    DS_EMAIL = ?,
+                    DS_SENHA = ?,
+                    TP_USUARIO = ?
                 WHERE ID_USUARIO = ?
                 """;
 
@@ -133,10 +133,10 @@ public class UsuarioDAO {
 
         usuario.setId(rs.getLong("ID_USUARIO"));
         usuario.setNome(rs.getString("NM_USUARIO"));
-        usuario.setEmail(rs.getString("EMAIL"));
-        usuario.setSenha(rs.getString("SENHA"));
+        usuario.setEmail(rs.getString("DS_EMAIL"));
+        usuario.setSenha(rs.getString("DS_SENHA"));
         usuario.setTipoUsuario(
-                TipoUsuario.valueOf(rs.getString("TIPO_USUARIO"))
+                TipoUsuario.valueOf(rs.getString("TP_USUARIO"))
         );
 
         return usuario;
