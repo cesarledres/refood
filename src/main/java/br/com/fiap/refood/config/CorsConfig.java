@@ -14,7 +14,7 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                ""
+                "https://refoodgs26.vercel.app"
         ));
 
         config.setAllowedMethods(List.of(
@@ -22,7 +22,8 @@ public class CorsConfig {
                 "POST",
                 "PUT",
                 "DELETE",
-                "PATCH"
+                "PATCH",
+                "OPTIONS"
         ));
 
         config.setAllowedHeaders(List.of(
